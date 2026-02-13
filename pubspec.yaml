@@ -1,0 +1,39 @@
+name: autopill
+description: "Ứng dụng nhắc uống thuốc thông minh - AutoPill"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+
+  # UI & Styling
+  google_fonts: ^6.1.0
+  font_awesome_flutter: ^10.6.0
+  percent_indicator: ^4.2.3
+  fl_chart: ^0.66.0
+
+  # State Management & Di
+  provider: ^6.1.1
+  get_it: ^7.6.4
+
+  # Local Storage & Core
+  sqflite: ^2.3.0
+  path: ^1.8.3
+  intl: ^0.18.1
+
+  # Features
+  flutter_local_notifications: ^16.1.0
+  timezone: ^0.9.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^2.0.0
+
+flutter:
+  uses-material-design: true
