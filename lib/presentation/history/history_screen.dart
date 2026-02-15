@@ -10,53 +10,48 @@ class HistoryScreen extends StatelessWidget {
     const successColor = Color(0xFF16A34A);
     const errorColor = Color(0xFFDC2626);
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // 1. Calendar Section
-          _buildCalendarCard(primaryColor, successColor, errorColor),
-
-          const SizedBox(height: 24),
-
-          // 2. Day Detail Header
-          Text(
-            'Chi tiết ngày 05/10',
-            style: GoogleFonts.lexend(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: const Color(0xFF111418),
+    return Scaffold(
+      // Thêm AppBar nếu muốn đồng bộ
+      appBar: AppBar(
+        title: Text("Lịch Sử Dùng Thuốc",
+            style: GoogleFonts.lexend(fontWeight: FontWeight.bold)),
+        centerTitle: true,
+        automaticallyImplyLeading: false,
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildCalendarCard(primaryColor, successColor, errorColor),
+            const SizedBox(height: 24),
+            Text(
+              'Chi tiết ngày 05/10',
+              style: GoogleFonts.lexend(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: const Color(0xFF111418),
+              ),
             ),
-          ),
-
-          const SizedBox(height: 16),
-
-          // 3. Daily Activity List
-          _buildHistoryItem(
-            name: "Lipitor (Huyết áp)",
-            timeStatus: "Đã uống: 08:00 sáng",
-            isSuccess: true,
-            successColor: successColor,
-            errorColor: errorColor,
-          ),
-          _buildHistoryItem(
-            name: "Vitamin D3",
-            timeStatus: "Bỏ lỡ: 14:00 chiều",
-            isSuccess: false,
-            successColor: successColor,
-            errorColor: errorColor,
-          ),
-          _buildHistoryItem(
-            name: "Glucosamine",
-            timeStatus: "Đã uống: 19:30 tối",
-            isSuccess: true,
-            successColor: successColor,
-            errorColor: errorColor,
-          ),
-
-          const SizedBox(height: 100), // Khoảng trống cho Bottom Nav
-        ],
+            const SizedBox(height: 16),
+            _buildHistoryItem(
+              name: "Lipitor (Huyết áp)",
+              timeStatus: "Đã uống: 08:00 sáng",
+              isSuccess: true,
+              successColor: successColor,
+              errorColor: errorColor,
+            ),
+            _buildHistoryItem(
+              name: "Vitamin D3",
+              timeStatus: "Bỏ lỡ: 14:00 chiều",
+              isSuccess: false,
+              successColor: successColor,
+              errorColor: errorColor,
+            ),
+            // Thêm padding dưới cùng để không bị che
+            const SizedBox(height: 100),
+          ],
+        ),
       ),
     );
   }
@@ -78,7 +73,6 @@ class HistoryScreen extends StatelessWidget {
       ),
       child: Column(
         children: [
-          // Month Selector
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -94,28 +88,24 @@ class HistoryScreen extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 20),
-          // Days Header
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7']
-                .map(
-                  (d) => Text(
-                    d,
+                .map((d) => Text(d,
                     style: GoogleFonts.lexend(
-                      color: Colors.grey,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                )
+                        color: Colors.grey, fontWeight: FontWeight.bold)))
                 .toList(),
           ),
           const SizedBox(height: 16),
-          // Simple Grid for Calendar
+
+          // --- SỬA LỖI TRÀN MÀN HÌNH TẠI ĐÂY ---
           GridView.count(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             crossAxisCount: 7,
             mainAxisSpacing: 10,
+            // QUAN TRỌNG: Chỉnh tỉ lệ để ô cao hơn, đủ chỗ chứa cái chấm
+            childAspectRatio: 0.75,
             children: [
               const SizedBox(),
               const SizedBox(),
@@ -124,18 +114,14 @@ class HistoryScreen extends StatelessWidget {
               _buildCalendarDay("2", success),
               _buildCalendarDay("3", error),
               _buildCalendarDay("4", success),
-              _buildCalendarDay(
-                "5",
-                Colors.white,
-                isSelected: true,
-                primary: primary,
-              ),
+              _buildCalendarDay("5", Colors.white,
+                  isSelected: true, primary: primary),
               _buildCalendarDay("6", null, isFuture: true),
               _buildCalendarDay("7", null, isFuture: true),
             ],
           ),
+
           const SizedBox(height: 20),
-          // Legend
           const Divider(),
           const SizedBox(height: 10),
           Row(
@@ -150,28 +136,24 @@ class HistoryScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildCalendarDay(
-    String day,
-    Color? dotColor, {
-    bool isSelected = false,
-    bool isFuture = false,
-    Color? primary,
-  }) {
+  // --- (Các hàm _buildCalendarDay, _buildHistoryItem giữ nguyên như cũ) ---
+  Widget _buildCalendarDay(String day, Color? dotColor,
+      {bool isSelected = false, bool isFuture = false, Color? primary}) {
     return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisAlignment: MainAxisAlignment.start, // Đẩy lên trên cho thoáng
       children: [
         Container(
-          height: 40,
-          width: 40,
+          height: 36, // Giảm height chút cho gọn
+          width: 36,
           decoration: BoxDecoration(
             color: isSelected ? primary : Colors.transparent,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(10),
           ),
           child: Center(
             child: Text(
               day,
               style: GoogleFonts.lexend(
-                fontSize: 18,
+                fontSize: 16,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                 color: isSelected
                     ? Colors.white
@@ -191,13 +173,12 @@ class HistoryScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildHistoryItem({
-    required String name,
-    required String timeStatus,
-    required bool isSuccess,
-    required Color successColor,
-    required Color errorColor,
-  }) {
+  Widget _buildHistoryItem(
+      {required String name,
+      required String timeStatus,
+      required bool isSuccess,
+      required Color successColor,
+      required Color errorColor}) {
     Color itemColor = isSuccess ? successColor : errorColor;
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -213,36 +194,23 @@ class HistoryScreen extends StatelessWidget {
             height: 60,
             width: 60,
             decoration: BoxDecoration(
-              color: itemColor.withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              isSuccess ? Icons.check_circle : Icons.cancel,
-              color: itemColor,
-              size: 36,
-            ),
+                color: itemColor.withOpacity(0.1), shape: BoxShape.circle),
+            child: Icon(isSuccess ? Icons.check_circle : Icons.cancel,
+                color: itemColor, size: 36),
           ),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  name,
-                  style: GoogleFonts.lexend(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+                Text(name,
+                    style: GoogleFonts.lexend(
+                        fontSize: 18, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 4),
-                Text(
-                  timeStatus,
-                  style: GoogleFonts.lexend(
-                    fontSize: 16,
-                    color: isSuccess ? Colors.grey : errorColor,
-                    fontWeight: isSuccess ? FontWeight.normal : FontWeight.bold,
-                  ),
-                ),
+                Text(timeStatus,
+                    style: GoogleFonts.lexend(
+                        fontSize: 14,
+                        color: isSuccess ? Colors.grey : errorColor)),
               ],
             ),
           ),
@@ -253,14 +221,9 @@ class HistoryScreen extends StatelessWidget {
 
   Widget _buildIconButton(IconData icon, Color color) {
     return Container(
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.05),
-        shape: BoxShape.circle,
-      ),
-      child: IconButton(
-        icon: Icon(icon, color: color),
-        onPressed: () {},
-      ),
+      decoration:
+          BoxDecoration(color: color.withOpacity(0.05), shape: BoxShape.circle),
+      child: IconButton(icon: Icon(icon, color: color), onPressed: () {}),
     );
   }
 
@@ -268,15 +231,13 @@ class HistoryScreen extends StatelessWidget {
     return Row(
       children: [
         Container(
-          height: 12,
-          width: 12,
-          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-        ),
+            height: 12,
+            width: 12,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
         const SizedBox(width: 8),
-        Text(
-          label,
-          style: GoogleFonts.lexend(fontSize: 16, fontWeight: FontWeight.w500),
-        ),
+        Text(label,
+            style:
+                GoogleFonts.lexend(fontSize: 14, fontWeight: FontWeight.w500)),
       ],
     );
   }

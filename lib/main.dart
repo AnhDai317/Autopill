@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:autopill/presentation/dashboard/dashboard_screen.dart'; // Import trang home của bạn
+import 'main_screen.dart'; // Import file vừa tạo vào đây
 
 void main() {
-  // Nếu bạn dùng GetIt (di.dart), hãy khởi tạo ở đây
-  // setupLocator();
   runApp(const MyApp());
 }
 
@@ -13,11 +11,11 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'AutoPill',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(primarySwatch: Colors.blue, useMaterial3: true),
-      // Thay đổi ở đây: Trỏ về DashboardScreen
-      home: const DashboardScreen(),
+      title: 'AutoPill',
+      theme: ThemeData(useMaterial3: true),
+      home:
+          const MainScreen(), // Đổi từ LoginScreen hay ScheduleScreen thành MainScreen
     );
   }
 }

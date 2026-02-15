@@ -1,6 +1,46 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+// --- Giả định class AppColors đã có trong dự án AutoPill của bạn ---
+class AppColors {
+  static const Color primary = Color(0xFF137FEC);
+  static const Color backgroundLight = Color(0xFFF6F7F8);
+}
+
+// --- Custom Button dùng chung cho toàn app để tránh lỗi Analyzer ---
+class AutoPillButton extends StatelessWidget {
+  final String text;
+  final VoidCallback onPressed;
+
+  const AutoPillButton(
+      {super.key, required this.text, required this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: AppColors.primary,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          width: double.infinity,
+          height: 56,
+          alignment: Alignment.center,
+          child: Text(
+            text,
+            style: GoogleFonts.lexend(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class AddMedicineStockScreen extends StatefulWidget {
   const AddMedicineStockScreen({super.key});
 
@@ -9,7 +49,6 @@ class AddMedicineStockScreen extends StatefulWidget {
 }
 
 class _AddMedicineStockScreenState extends State<AddMedicineStockScreen> {
-  final Color primaryColor = const Color(0xFF137FEC);
   int _selectedIconIndex = 0;
 
   final List<Map<String, dynamic>> _medicineIcons = [
@@ -22,20 +61,18 @@ class _AddMedicineStockScreenState extends State<AddMedicineStockScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF6F7F8),
+      backgroundColor: AppColors.backgroundLight,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios, color: primaryColor),
+          icon: const Icon(Icons.arrow_back_ios, color: AppColors.primary),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
           'Nhập Thuốc Vào Kho',
           style: GoogleFonts.lexend(
-            color: Colors.black,
-            fontWeight: FontWeight.bold,
-          ),
+              color: Colors.black, fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
       ),
@@ -48,20 +85,15 @@ class _AddMedicineStockScreenState extends State<AddMedicineStockScreen> {
               children: [
                 _buildTextField("Tên thuốc", "Ví dụ: Lisinopril"),
                 _buildTextField(
-                  "Loại bệnh / Công dụng",
-                  "Ví dụ: Huyết áp, Tiểu đường",
-                ),
+                    "Loại bệnh / Công dụng", "Ví dụ: Huyết áp, Tiểu đường"),
 
                 const SizedBox(height: 20),
 
                 Row(
                   children: [
                     Expanded(
-                      child: _buildTextField(
-                        "Số lượng nhập",
-                        "Ví dụ: 40",
-                        isNumber: true,
-                      ),
+                      child: _buildTextField("Số lượng nhập", "Ví dụ: 40",
+                          isNumber: true),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -73,8 +105,8 @@ class _AddMedicineStockScreenState extends State<AddMedicineStockScreen> {
                 const SizedBox(height: 20),
 
                 _buildTextField(
-                  "Cảnh báo khi còn lại ít hơn",
-                  "Ví dụ: 10 (Hệ thống sẽ báo Sắp hết)",
+                  "Cảnh báo khi sắp hết",
+                  "Ví dụ: 10 (Hệ thống sẽ báo đỏ)",
                   isNumber: true,
                 ),
 
@@ -83,9 +115,7 @@ class _AddMedicineStockScreenState extends State<AddMedicineStockScreen> {
                 Text(
                   "Biểu tượng hiển thị",
                   style: GoogleFonts.lexend(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
+                      fontSize: 16, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 12),
                 GridView.builder(
@@ -105,12 +135,12 @@ class _AddMedicineStockScreenState extends State<AddMedicineStockScreen> {
                       child: Container(
                         decoration: BoxDecoration(
                           color: isSelected
-                              ? primaryColor.withOpacity(0.05)
+                              ? AppColors.primary.withOpacity(0.05)
                               : Colors.white,
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
                             color: isSelected
-                                ? primaryColor
+                                ? AppColors.primary
                                 : Colors.grey.shade300,
                             width: isSelected ? 2 : 1,
                           ),
@@ -120,14 +150,14 @@ class _AddMedicineStockScreenState extends State<AddMedicineStockScreen> {
                           children: [
                             Icon(
                               _medicineIcons[index]['icon'],
-                              color: isSelected ? primaryColor : Colors.grey,
+                              color:
+                                  isSelected ? AppColors.primary : Colors.grey,
                             ),
                             const SizedBox(width: 8),
                             Text(
                               _medicineIcons[index]['label'],
                               style: GoogleFonts.lexend(
-                                fontWeight: FontWeight.w600,
-                              ),
+                                  fontWeight: FontWeight.w600),
                             ),
                           ],
                         ),
@@ -135,13 +165,12 @@ class _AddMedicineStockScreenState extends State<AddMedicineStockScreen> {
                     );
                   },
                 ),
-
-                const SizedBox(height: 120),
+                const SizedBox(height: 120), // Khoảng trống cho nút ở dưới
               ],
             ),
           ),
 
-          // Nút Lưu thông tin (Sửa lỗi undefined method tại đây)
+          // Nút Lưu thông tin (Đã sửa lỗi)
           Positioned(
             bottom: 0,
             left: 0,
@@ -149,25 +178,14 @@ class _AddMedicineStockScreenState extends State<AddMedicineStockScreen> {
             child: Container(
               padding: const EdgeInsets.all(16),
               color: Colors.white,
-              child: ElevatedButton(
+              child: AutoPillButton(
+                text: "LƯU VÀO KHO",
                 onPressed: () {
                   // Logic lưu vào kho thuốc
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("Đã thêm thuốc vào kho!")),
+                  );
                 },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: primaryColor,
-                  minimumSize: const Size(double.infinity, 56),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: Text(
-                  "LƯU VÀO KHO",
-                  style: GoogleFonts.lexend(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
               ),
             ),
           ),
@@ -182,13 +200,9 @@ class _AddMedicineStockScreenState extends State<AddMedicineStockScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label,
-            style: GoogleFonts.lexend(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
+          Text(label,
+              style: GoogleFonts.lexend(
+                  fontSize: 16, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           TextField(
             keyboardType: isNumber ? TextInputType.number : TextInputType.text,
@@ -196,13 +210,14 @@ class _AddMedicineStockScreenState extends State<AddMedicineStockScreen> {
               hintText: hint,
               filled: true,
               fillColor: Colors.white,
-              border: OutlineInputBorder(
+              enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide(color: Colors.grey.shade300),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: primaryColor, width: 2),
+                borderSide:
+                    const BorderSide(color: AppColors.primary, width: 2),
               ),
             ),
           ),

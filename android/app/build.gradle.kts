@@ -13,6 +13,9 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+        
+        // SỬA LẠI DÒNG NÀY (Thêm "is" và dấu "="):
+        isCoreLibraryDesugaringEnabled = true
     }
 
     kotlinOptions {
@@ -20,10 +23,9 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
+        // TODO: Specify your own unique Application ID
         applicationId = "com.example.autopill"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
+        
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
@@ -37,6 +39,16 @@ android {
             signingConfig = signingConfigs.getByName("debug")
         }
     }
+}
+
+dependencies {
+    // SỬA LẠI CÚ PHÁP DEPENDENCIES (Thêm ngoặc đơn và ngoặc kép):
+    
+    // Lưu ý: Nếu dòng này báo lỗi $kotlin_version, bạn có thể tạm thời comment nó lại vì Flutter thường tự xử lý Kotlin rồi.
+    // implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version")
+
+    // THÊM DÒNG NÀY (Chuẩn cú pháp Kotlin):
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
 }
 
 flutter {

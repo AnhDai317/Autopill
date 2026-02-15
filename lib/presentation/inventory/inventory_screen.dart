@@ -7,109 +7,122 @@ class InventoryScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const primaryColor = Color(0xFF137FEC);
-    const backgroundLight = Color(0xFFF6F7F8);
 
     return SingleChildScrollView(
       child: Column(
         children: [
-          // 1. Header Status
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 24.0),
-            child: Column(
-              children: [
-                Text(
-                  'TÌNH TRẠNG KHO',
-                  style: GoogleFonts.lexend(
-                    color: primaryColor,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
-                    letterSpacing: 1.2,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Số lượng còn lại',
-                  style: GoogleFonts.lexend(
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                    color: const Color(0xFF111418),
-                  ),
-                ),
-                Text(
-                  'Bạn có 2 loại thuốc sắp hết',
-                  style: GoogleFonts.lexend(
-                    color: const Color(0xFF617589),
-                    fontSize: 14,
-                  ),
-                ),
-              ],
-            ),
-          ),
+          // 1. Header Tình trạng kho
+          _buildHeader(),
 
-          // 2. Critical Section (Cần chú ý ngay)
-          _buildSectionHeader(Icons.error, "CẦN CHÚ Ý NGAY", Colors.red),
-          _buildMedicineStockCard(
+          // 2. Section: Cần chú ý ngay
+          _buildSectionTitle(
+            Icons.warning_amber_rounded,
+            "CẦN CHÚ Ý NGAY",
+            Colors.red,
+          ),
+          _buildActiveMedicineCard(
             name: "Lisinopril 10mg",
             type: "Huyết áp",
             remaining: 12,
             total: 40,
+            percent: 0.3,
             imageUrl:
-                "https://lh3.googleusercontent.com/aida-public/AB6AXuC10kRfb3aN_VJ8YG1236zTGmFlnzPAfyI7ApdYre3nSPYwdFXRiNbRJiLBlDxptca0v0gN87SWioQYIWKUVXvBkgWuuliO9ZYnUgLwFZ9Wmxd-RWoAH_LxdPMhP7Ktj-qL0QP9DQ-feErx25bYafB4ED_DZzA0SIAVvXF5DIfa8GvCghk-AFaPAKAz1KEegaG9lNfdF-xQbGa_gvJwjecTmYWxcMEgXdyGev1SPHFqMeiymh1O5P9cs-xK-8y5jFZ2oSy_WuzkzvGG",
-            statusLabel: "Sắp hết",
-            footerText: "Mua lại mỗi 30 ngày",
+                "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?auto=format&fit=crop&q=80&w=400",
+            primaryColor: primaryColor,
             isWarning: true,
+          ),
+
+          // 3. Section: Thuốc dư thừa
+          _buildSectionTitle(
+            Icons.archive_outlined,
+            "THUỐC DƯ THỪA / NGỪNG DÙNG",
+            Colors.orange,
+          ),
+          _buildArchivedCard(
+            name: "Augmentin 625mg",
+            date: "15/10/2023",
+            reason: "Đã hoàn thành liệu trình kháng sinh.",
+            remainingCount: 6,
             primaryColor: primaryColor,
           ),
-          _buildMedicineStockCard(
-            name: "Metformin 500mg",
-            type: "Tiểu đường",
-            remaining: 5,
-            total: 60,
-            imageUrl:
-                "https://lh3.googleusercontent.com/aida-public/AB6AXuBGXZb8yEOOSCInr8u-1NJDZS4fa9Sb_ziEDEQiUMZ0SavlWUGfj8SwdxEhF0XBPnjiX9BCV4gQjXcVVXhB4pOovpc0Sr8czYbVITlw2ruo7o9SiWI4RiW3-bVM9pDmcAYFlQMeMOjP1pIiBzrJHAZPCvud2SIgnZRbJ1i4WWxqBHWWQFl2cg85Bqu2Ers1bOyfVLYwQ-AcVOghPp_0SMjvUXg-MxhXmsaZwrllZu1BnWxrczRlHalDzo2UTCfhHnENSqAd3O1rPslE",
-            statusLabel: "Sắp hết",
-            footerText: "Trễ hạn mua 3 ngày",
-            isWarning: true,
+          _buildArchivedCard(
+            name: "Paracetamol 500mg",
+            date: "02/11/2023",
+            reason: "Hết triệu chứng sốt và đau đầu.",
+            remainingCount: 10,
             primaryColor: primaryColor,
           ),
 
-          // 3. Stable Section (Số lượng ổn định)
-          const SizedBox(height: 16),
-          _buildSectionHeader(
-            Icons.check_circle,
-            "SỐ LƯỢNG ỔN ĐỊNH",
+          // 4. Section: Đang sử dụng ổn định
+          _buildSectionTitle(
+            Icons.check_circle_outline_rounded,
+            "ĐANG SỬ DỤNG ỔN ĐỊNH",
             Colors.green,
           ),
-          _buildMedicineStockCard(
+          _buildActiveMedicineCard(
             name: "Atorvastatin 20mg",
             type: "Mỡ máu",
             remaining: 85,
             total: 90,
+            percent: 0.94,
             imageUrl:
-                "https://lh3.googleusercontent.com/aida-public/AB6AXuDc0yj38p7joG3ozDDK-MUots8gJVRbv0RAOr718yu9VvM313fJvGpwjDRZ4V_EEM-x0o91g09sLg_KD8c57JIH3nv-m4DYx4Rs19AYm7fE8F4xM-EdfOJAA7WvvQ9f5wfkNVRgJeuFBjS0GLxj4b3lRXvAH3j8N2yqqvItsjcGnNCCnapL0Bj-B6xrgEPLMTePUQgLRiwUjFn4HZcAteKn61pv_ezKWDtSxG8sbwek4MUHx8U3V38bLmsaWL3p6-jAZ7XU4gwkVORb",
-            footerText: "Đã mua lần cuối 1 tháng trước",
-            isWarning: false,
+                "https://images.unsplash.com/photo-1628771065518-0d82f0263ece?auto=format&fit=crop&q=80&w=400",
             primaryColor: primaryColor,
+            isWarning: false,
           ),
 
-          const SizedBox(height: 100), // Khoảng trống tránh bị Bottom Nav che
+          const SizedBox(height: 100),
         ],
       ),
     );
   }
 
-  Widget _buildSectionHeader(IconData icon, String title, Color color) {
+  Widget _buildHeader() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+      padding: const EdgeInsets.symmetric(vertical: 24),
+      child: Column(
+        children: [
+          Text(
+            'TÌNH TRẠNG KHO',
+            style: GoogleFonts.lexend(
+              color: const Color(0xFF137FEC),
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1.5,
+              fontSize: 14,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Số lượng còn lại',
+            style: GoogleFonts.lexend(
+              fontSize: 32,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          Text(
+            'Bạn có 2 loại thuốc sắp hết',
+            style: GoogleFonts.lexend(
+              color: const Color(0xFF617589),
+              fontSize: 16,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSectionTitle(IconData icon, String title, Color color) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
       child: Row(
         children: [
-          Icon(icon, color: color, size: 20),
+          Icon(icon, color: color, size: 24),
           const SizedBox(width: 8),
           Text(
             title,
             style: GoogleFonts.lexend(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
               color: const Color(0xFF111418),
             ),
           ),
@@ -118,40 +131,34 @@ class InventoryScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildMedicineStockCard({
+  Widget _buildActiveMedicineCard({
     required String name,
     required String type,
     required int remaining,
     required int total,
+    required double percent,
     required String imageUrl,
-    String? statusLabel,
-    required String footerText,
-    required bool isWarning,
     required Color primaryColor,
+    required bool isWarning,
   }) {
-    double progress = remaining / total;
     Color statusColor = isWarning ? Colors.red : Colors.green;
-
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.grey[100]!),
         boxShadow: [
           BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10),
         ],
-        border: Border.all(color: Colors.grey.withOpacity(0.1)),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Ảnh thuốc
           Container(
             height: 160,
-            width: double.infinity,
             decoration: BoxDecoration(
               borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(20),
+                top: Radius.circular(24),
               ),
               image: DecorationImage(
                 image: NetworkImage(imageUrl),
@@ -160,7 +167,7 @@ class InventoryScreen extends StatelessWidget {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.all(20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -180,89 +187,224 @@ class InventoryScreen extends StatelessWidget {
                         Text(
                           type,
                           style: GoogleFonts.lexend(
-                            color: const Color(0xFF617589),
+                            color: Colors.grey,
                             fontSize: 16,
                           ),
                         ),
                       ],
                     ),
-                    if (statusLabel != null)
+                    if (isWarning)
                       Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
+                          horizontal: 10,
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
                           color: Colors.red[50],
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: Text(
-                          statusLabel.toUpperCase(),
-                          style: GoogleFonts.lexend(
+                        child: const Text(
+                          "SẮP HẾT",
+                          style: TextStyle(
                             color: Colors.red,
-                            fontSize: 10,
                             fontWeight: FontWeight.bold,
+                            fontSize: 10,
                           ),
                         ),
                       ),
                   ],
                 ),
-                const SizedBox(height: 16),
-                // Progress Bar
+                const SizedBox(height: 20),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      "Số lượng còn lại",
-                      style: GoogleFonts.lexend(fontWeight: FontWeight.w500),
+                      "Còn lại: $remaining/$total viên",
+                      style: GoogleFonts.lexend(fontWeight: FontWeight.bold),
                     ),
                     Text(
-                      "$remaining/$total viên",
-                      style: GoogleFonts.lexend(
-                        fontWeight: FontWeight.bold,
+                      "${(percent * 100).toInt()}%",
+                      style: TextStyle(
                         color: statusColor,
+                        fontWeight: FontWeight.w900,
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 8),
                 LinearProgressIndicator(
-                  value: progress,
+                  value: percent,
                   backgroundColor: Colors.grey[200],
                   valueColor: AlwaysStoppedAnimation<Color>(statusColor),
-                  minHeight: 8,
-                  borderRadius: BorderRadius.circular(10),
+                  minHeight: 10,
+                  borderRadius: BorderRadius.circular(5),
                 ),
-                const SizedBox(height: 16),
-                // Footer & Button
-                const Divider(),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      footerText,
-                      style: GoogleFonts.lexend(
-                        color: const Color(0xFF617589),
-                        fontSize: 12,
-                        fontStyle: FontStyle.italic,
+                if (isWarning) ...[
+                  const SizedBox(height: 20),
+                  // THAY THẾ ELEVATED BUTTON BẰNG CONTAINER
+                  GestureDetector(
+                    onTap: () {
+                      // Xử lý mua thêm
+                    },
+                    child: Container(
+                      height: 56,
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: primaryColor,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: primaryColor.withOpacity(0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.shopping_cart, color: Colors.white),
+                          const SizedBox(width: 8),
+                          Text(
+                            "Mua thêm ngay",
+                            style: GoogleFonts.lexend(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    ElevatedButton(
-                      onPressed: () {},
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: primaryColor,
-                        foregroundColor: Colors.white,
-                        shape: const StadiumBorder(),
-                        elevation: 0,
-                      ),
-                      child: const Text("Mua thêm"),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ],
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildArchivedCard({
+    required String name,
+    required String date,
+    required String reason,
+    required int remainingCount,
+    required Color primaryColor,
+  }) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.grey[200]!),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    name,
+                    style: GoogleFonts.lexend(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(
+                    "Ngừng dùng: $date",
+                    style: GoogleFonts.lexend(
+                      color: Colors.orange[800],
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: Colors.grey[100],
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  "CÒN $remainingCount VIÊN",
+                  style: const TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            "Lý do: $reason",
+            style: GoogleFonts.lexend(color: Colors.grey[600], fontSize: 16),
+          ),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              // THAY THẾ OUTLINED BUTTON 1
+              Expanded(
+                child: _buildCustomOutlineButton(
+                  icon: Icons.history,
+                  label: "Tái sử dụng",
+                  color: primaryColor,
+                  onTap: () {},
+                ),
+              ),
+              const SizedBox(width: 12),
+              // THAY THẾ OUTLINED BUTTON 2
+              Expanded(
+                child: _buildCustomOutlineButton(
+                  icon: Icons.delete_forever,
+                  label: "Tiêu hủy",
+                  color: Colors.red,
+                  onTap: () {},
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCustomOutlineButton({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 48,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color, width: 2),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: color, size: 20),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: GoogleFonts.lexend(
+                color: color,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
