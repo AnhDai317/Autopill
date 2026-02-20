@@ -1,5 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
+
+import '../../viewmodels/login/login_viewmodel.dart';
+import '../../main_screen.dart';
+// IMPORT THÊM MÀN HÌNH ĐĂNG KÝ VÀO ĐÂY
+import 'register_screen.dart';
 
 // --- Hệ thống màu sắc trung tâm (AppColors) ---
 class AppColors {
@@ -9,17 +15,19 @@ class AppColors {
   static const Color border = Color(0xFFDBE0E6);
 }
 
-// --- Custom Button để thay thế ElevatedButton (Khắc phục lỗi undefined_method) ---
+// --- Custom Button ---
 class AutoPillButton extends StatelessWidget {
   final String text;
   final VoidCallback onPressed;
   final bool isOutlined;
+  final bool isLoading;
 
   const AutoPillButton({
     super.key,
     required this.text,
     required this.onPressed,
     this.isOutlined = false,
+    this.isLoading = false,
   });
 
   @override
@@ -30,7 +38,7 @@ class AutoPillButton extends StatelessWidget {
       elevation: isOutlined ? 0 : 4,
       shadowColor: AppColors.primary.withOpacity(0.3),
       child: InkWell(
-        onTap: onPressed,
+        onTap: isLoading ? null : onPressed,
         borderRadius: BorderRadius.circular(16),
         child: Container(
           width: double.infinity,
@@ -42,14 +50,23 @@ class AutoPillButton extends StatelessWidget {
                 : null,
           ),
           alignment: Alignment.center,
-          child: Text(
-            text,
-            style: GoogleFonts.lexend(
-              fontSize: isOutlined ? 18 : 20,
-              fontWeight: FontWeight.bold,
-              color: isOutlined ? AppColors.primary : Colors.white,
-            ),
-          ),
+          child: isLoading
+              ? const SizedBox(
+                  height: 24,
+                  width: 24,
+                  child: CircularProgressIndicator(
+                    color: Colors.white,
+                    strokeWidth: 3,
+                  ),
+                )
+              : Text(
+                  text,
+                  style: GoogleFonts.lexend(
+                    fontSize: isOutlined ? 18 : 20,
+                    fontWeight: FontWeight.bold,
+                    color: isOutlined ? AppColors.primary : Colors.white,
+                  ),
+                ),
         ),
       ),
     );
@@ -69,17 +86,49 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _identityController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
+  void _handleLogin() async {
+    final email = _identityController.text.trim();
+    final password = _passwordController.text;
+
+    if (email.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Vui lòng nhập Email và Mật khẩu')),
+      );
+      return;
+    }
+
+    final viewModel = context.read<LoginViewModel>();
+    final success = await viewModel.login(email, password);
+
+    if (!mounted) return;
+
+    if (success) {
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => const MainScreen()),
+        (route) => false,
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(viewModel.errorMessage ?? 'Đăng nhập thất bại'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final isLoading = context.watch<LoginViewModel>().isLoading;
+
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.black, size: 20),
-          onPressed: () => Navigator.pop(context),
-        ),
+        // FIX 2: XÓA NÚT BACK VÀ CHẶN FLUTTER TỰ SINH NÚT BACK
+        automaticallyImplyLeading: false,
         title: Text(
           'Đăng Nhập',
           style: GoogleFonts.lexend(
@@ -128,10 +177,10 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 // Input Fields
                 _buildInputField(
-                  label: 'Số điện thoại hoặc Email',
-                  placeholder: 'Nhập thông tin',
+                  label: 'Email',
+                  placeholder: 'Nhập Email của bạn',
                   controller: _identityController,
-                  icon: Icons.person,
+                  icon: Icons.email_outlined,
                 ),
                 const SizedBox(height: 20),
                 _buildPasswordField(),
@@ -151,13 +200,11 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 24),
 
-                // Login Button (Sửa lỗi tại đây)
+                // Login Button
                 AutoPillButton(
                   text: 'ĐĂNG NHẬP NGAY',
-                  onPressed: () {
-                    print(
-                        "Đăng nhập cho AutoPill: ${_identityController.text}");
-                  },
+                  isLoading: isLoading,
+                  onPressed: _handleLogin,
                 ),
 
                 const SizedBox(height: 40),
@@ -168,11 +215,17 @@ class _LoginScreenState extends State<LoginScreen> {
                   style: GoogleFonts.lexend(color: AppColors.textGray),
                 ),
                 const SizedBox(height: 12),
+
+                // FIX 1: NÚT ĐĂNG KÝ ĐÃ ĐƯỢC KÍCH HOẠT CHUYỂN TRANG
                 AutoPillButton(
                   text: 'Đăng ký tài khoản mới',
                   isOutlined: true,
                   onPressed: () {
-                    // Chuyển sang màn hình đăng ký
+                    // Mở khóa lệnh chuyển sang màn hình RegisterScreen
+                    Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const RegisterScreen()));
                   },
                 ),
                 const SizedBox(height: 32),

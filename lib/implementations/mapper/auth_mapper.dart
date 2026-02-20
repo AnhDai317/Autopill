@@ -1,6 +1,7 @@
 import '../../interfaces/mapper/imapper.dart';
-import '../../dtos/auth/user_dto.dart';
-import '../../../domain/entities/user.dart';
+// Sửa lại đường dẫn import đúng vị trí thực tế của UserDto
+import '../../data/dtos/login/user_dto.dart';
+import '../../domain/entities/user.dart';
 
 class AuthMapper implements IMapper<UserDto, User> {
   @override

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../data/interfaces/repositories/iauth_repository.dart';
+
+// Đảm bảo đường dẫn này trỏ đúng tới interface IAuthRepository của bác
+import '../../interfaces/repositories/iauth_repository.dart';
 
 class LoginViewModel extends ChangeNotifier {
   final IAuthRepository _authRepository;
@@ -17,7 +19,7 @@ class LoginViewModel extends ChangeNotifier {
   Future<bool> login(String email, String password) async {
     _isLoading = true;
     _errorMessage = null;
-    notifyListeners(); // Báo cho UI hiện loading
+    notifyListeners(); // Báo cho UI hiện vòng xoay loading
 
     try {
       final user = await _authRepository.login(email, password);
@@ -27,7 +29,9 @@ class LoginViewModel extends ChangeNotifier {
         final prefs = await SharedPreferences.getInstance();
         await prefs.setBool('isLoggedIn', true);
         await prefs.setString('userEmail', user.email);
-        await prefs.setInt('userId', user.id);
+
+        // Fix: Đề phòng user.id bị null
+        await prefs.setInt('userId', user.id ?? 0);
 
         _isLoading = false;
         notifyListeners();

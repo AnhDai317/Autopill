@@ -2,11 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-// Import các file cần thiết
-import 'data/implementations/repositories/auth_repository.dart';
-import 'viewmodels/login/login_viewmodel.dart';
-import 'views/login_page.dart'; // Màn hình đăng nhập của bạn
-import 'views/home_page.dart'; // Màn hình chính sau khi đăng nhập (hoặc dashboard_screen.dart)
+// Import đúng link thư mục của project autopill
+import 'package:autopill/di.dart'; // Import file di.dart ở trên
+import 'package:autopill/presentation/auth/login_screen.dart'; // Gọi đúng LoginScreen
+import 'package:autopill/main_screen.dart'; // Gọi đúng MainScreen (có Bottom Nav)
 
 void main() async {
   // Bắt buộc gọi dòng này nếu muốn dùng SharedPreferences trước runApp
@@ -19,9 +18,9 @@ void main() async {
   runApp(
     MultiProvider(
       providers: [
-        // Tiêm ViewModel vào toàn App (Dependency Injection cơ bản)
+        // Tiêm ViewModel vào toàn App thông qua DI
         ChangeNotifierProvider(
-          create: (_) => LoginViewModel(AuthRepository()),
+          create: (_) => buildLogin(),
         ),
       ],
       child: MyApp(isLoggedIn: isLoggedIn),
@@ -42,9 +41,10 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      // ĐIỀU HƯỚNG THÔNG MINH Ở ĐÂY
-      // Nếu true -> Vào thẳng Home. Nếu false -> Bắt ra màn Login
-      home: isLoggedIn ? const HomePage() : const LoginPage(),
+      // ĐIỀU HƯỚNG THÔNG MINH:
+      // Nếu isLoggedIn == true -> Bắt thẳng vào MainScreen (có 4 tab)
+      // Nếu isLoggedIn == false -> Bắt ra LoginScreen
+      home: isLoggedIn ? const MainScreen() : const LoginScreen(),
     );
   }
 }

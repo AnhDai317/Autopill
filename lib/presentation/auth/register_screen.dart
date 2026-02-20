@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart'; // Import bộ cuộn iOS
 import 'package:google_fonts/google_fonts.dart';
+
+import '../../data/dtos/auth/register_request_dto.dart';
+import '../../implementations/repositories/auth_repository.dart';
 
 // --- Hệ thống màu sắc trung tâm của AutoPill ---
 class AppColors {
@@ -10,13 +14,18 @@ class AppColors {
   static const Color border = Color(0xFFDBE0E6);
 }
 
-// --- Custom Button để tránh lỗi Analyzer và tiết kiệm RAM ---
+// --- Custom Button (Có thêm vòng xoay loading) ---
 class AutoPillButton extends StatelessWidget {
   final String text;
   final VoidCallback onPressed;
+  final bool isLoading;
 
-  const AutoPillButton(
-      {super.key, required this.text, required this.onPressed});
+  const AutoPillButton({
+    super.key,
+    required this.text,
+    required this.onPressed,
+    this.isLoading = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -26,20 +35,27 @@ class AutoPillButton extends StatelessWidget {
       elevation: 4,
       shadowColor: AppColors.primary.withOpacity(0.3),
       child: InkWell(
-        onTap: onPressed,
+        onTap: isLoading ? null : onPressed,
         borderRadius: BorderRadius.circular(16),
         child: Container(
           width: double.infinity,
           height: 64,
           alignment: Alignment.center,
-          child: Text(
-            text,
-            style: GoogleFonts.lexend(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-          ),
+          child: isLoading
+              ? const SizedBox(
+                  height: 24,
+                  width: 24,
+                  child: CircularProgressIndicator(
+                      color: Colors.white, strokeWidth: 3),
+                )
+              : Text(
+                  text,
+                  style: GoogleFonts.lexend(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
         ),
       ),
     );
@@ -57,6 +73,126 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _isObscure = true;
   bool _isConfirmObscure = true;
   bool _agreeToTerms = false;
+  bool _isLoading = false; // Trạng thái đang đăng ký
+
+  DateTime? _selectedDate;
+
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _emailController =
+      TextEditingController(); // Đổi thành Email
+  final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _confirmPasswordController =
+      TextEditingController();
+
+  // Hàm mở bộ cuộn ngày tháng năm (Cupertino)
+  void _showCupertinoDatePicker() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (BuildContext builder) {
+        return Container(
+          height: 300,
+          padding: const EdgeInsets.only(top: 10),
+          child: SafeArea(
+            child: Column(
+              children: [
+                // Nút Xong để đóng cuộn
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: Text('Xong',
+                        style: GoogleFonts.lexend(
+                            fontSize: 18,
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.bold)),
+                  ),
+                ),
+                Expanded(
+                  child: CupertinoDatePicker(
+                    mode:
+                        CupertinoDatePickerMode.date, // Chỉ cuộn ngày tháng năm
+                    initialDateTime: _selectedDate ?? DateTime(2000, 1, 1),
+                    minimumDate: DateTime(1900),
+                    maximumDate: DateTime.now(),
+                    onDateTimeChanged: (DateTime newDate) {
+                      setState(() {
+                        _selectedDate = newDate;
+                      });
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // Hàm xử lý Đăng ký lưu vào DB
+  void _handleRegister() async {
+    if (_nameController.text.isEmpty ||
+        _emailController.text.isEmpty ||
+        _passwordController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Vui lòng điền đủ thông tin!")));
+      return;
+    }
+    if (_passwordController.text != _confirmPasswordController.text) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Mật khẩu xác nhận không khớp!")));
+      return;
+    }
+    if (!_agreeToTerms) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text("Bạn cần đồng ý với điều khoản để tiếp tục!")));
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    final repo = AuthRepository();
+    final request = RegisterRequestDto(
+      fullName: _nameController.text.trim(),
+      email: _emailController.text.trim(),
+      password: _passwordController.text,
+      dob: _selectedDate != null ? _selectedDate!.toIso8601String() : null,
+    );
+
+    // Lưu vào Database
+    bool success = await repo.register(request);
+
+    if (!mounted) return;
+    setState(() => _isLoading = false);
+
+    if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text("Đăng ký thành công! Hãy đăng nhập."),
+            backgroundColor: Colors.green),
+      );
+      Navigator.pop(context); // Quay về màn Login
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text("Email này đã được sử dụng!"),
+            backgroundColor: Colors.red),
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -83,7 +219,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
       ),
       body: Stack(
         children: [
-          // Decorative background icon
           Positioned(
             bottom: 16,
             right: 16,
@@ -118,20 +253,27 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     const SizedBox(height: 24),
 
                     _buildLabel('Họ và tên'),
-                    _buildTextField(hint: 'Ví dụ: Nguyễn Văn A'),
+                    _buildTextField(
+                        controller: _nameController,
+                        hint: 'Ví dụ: Nguyễn Văn A',
+                        icon: Icons.person_outline),
 
                     const SizedBox(height: 16),
                     _buildBirthDateSection(),
 
                     const SizedBox(height: 16),
-                    _buildLabel('Số điện thoại'),
+                    // ĐÃ ĐỔI THÀNH EMAIL Ở ĐÂY
+                    _buildLabel('Email'),
                     _buildTextField(
-                        hint: 'Nhập số điện thoại của bạn',
-                        keyboardType: TextInputType.phone),
+                        controller: _emailController,
+                        hint: 'Nhập địa chỉ Email',
+                        icon: Icons.email_outlined,
+                        keyboardType: TextInputType.emailAddress),
 
                     const SizedBox(height: 16),
                     _buildLabel('Mật khẩu'),
                     _buildPasswordField(
+                      controller: _passwordController,
                       hint: 'Tạo mật khẩu bảo mật',
                       isObscure: _isObscure,
                       onToggle: () => setState(() => _isObscure = !_isObscure),
@@ -140,6 +282,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     const SizedBox(height: 16),
                     _buildLabel('Xác nhận mật khẩu'),
                     _buildPasswordField(
+                      controller: _confirmPasswordController,
                       hint: 'Nhập lại mật khẩu',
                       isObscure: _isConfirmObscure,
                       onToggle: () => setState(
@@ -150,20 +293,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     _buildTermsCheckbox(),
 
                     const SizedBox(height: 32),
-                    // Nút Đăng ký (Đã sửa lỗi)
+
+                    // NÚT ĐĂNG KÝ GỌI HÀM VÀ HIỆN LOADING
                     AutoPillButton(
                       text: 'Tạo tài khoản',
-                      onPressed: () {
-                        if (_agreeToTerms) {
-                          print("Đang tạo tài khoản...");
-                        } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                                content: Text(
-                                    "Bạn cần đồng ý với điều khoản để tiếp tục")),
-                          );
-                        }
-                      },
+                      isLoading: _isLoading,
+                      onPressed: _handleRegister,
                     ),
 
                     const SizedBox(height: 32),
@@ -190,14 +325,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  Widget _buildTextField({required String hint, TextInputType? keyboardType}) {
+  Widget _buildTextField(
+      {required String hint,
+      required TextEditingController controller,
+      IconData? icon,
+      TextInputType? keyboardType}) {
     return TextField(
+      controller: controller,
       keyboardType: keyboardType,
       style: GoogleFonts.lexend(fontSize: 18),
       decoration: InputDecoration(
         hintText: hint,
         hintStyle:
             GoogleFonts.lexend(color: const Color(0xFF617589), fontSize: 16),
+        prefixIcon: icon != null ? Icon(icon, color: Colors.grey) : null,
         filled: true,
         fillColor: Colors.white,
         contentPadding: const EdgeInsets.all(16),
@@ -214,14 +355,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Widget _buildPasswordField(
       {required String hint,
       required bool isObscure,
-      required VoidCallback onToggle}) {
+      required VoidCallback onToggle,
+      required TextEditingController controller}) {
     return TextField(
+      controller: controller,
       obscureText: isObscure,
       style: GoogleFonts.lexend(fontSize: 18),
       decoration: InputDecoration(
         hintText: hint,
         hintStyle:
             GoogleFonts.lexend(color: const Color(0xFF617589), fontSize: 16),
+        prefixIcon: const Icon(Icons.lock_outline, color: Colors.grey),
         filled: true,
         fillColor: Colors.white,
         contentPadding: const EdgeInsets.all(16),
@@ -303,6 +447,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   Widget _buildBirthDateSection() {
+    String dayStr = _selectedDate != null
+        ? _selectedDate!.day.toString().padLeft(2, '0')
+        : '--';
+    String monthStr = _selectedDate != null
+        ? _selectedDate!.month.toString().padLeft(2, '0')
+        : '--';
+    String yearStr =
+        _selectedDate != null ? _selectedDate!.year.toString() : '----';
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -310,36 +463,40 @@ class _RegisterScreenState extends State<RegisterScreen> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             _buildLabel('Ngày sinh'),
-            Text('Ví dụ: 01/01/1950',
+            Text('Nhấp vào để chọn ngày',
                 style: GoogleFonts.lexend(
                     color: AppColors.primary,
                     fontWeight: FontWeight.w500,
                     fontSize: 13)),
           ],
         ),
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-                color: AppColors.primary.withOpacity(0.5), width: 1.5),
-          ),
-          child: Row(
-            children: [
-              _buildDateDropdown('Ngày', '01'),
-              const SizedBox(width: 8),
-              _buildDateDropdown('Tháng', '01'),
-              const SizedBox(width: 8),
-              _buildDateDropdown('Năm', '1950', flex: 15),
-            ],
+        // GẮN SỰ KIỆN MỞ CUỘN Ở ĐÂY
+        GestureDetector(
+          onTap: _showCupertinoDatePicker,
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                  color: AppColors.primary.withOpacity(0.5), width: 1.5),
+            ),
+            child: Row(
+              children: [
+                _buildDateBox('Ngày', dayStr),
+                const SizedBox(width: 8),
+                _buildDateBox('Tháng', monthStr),
+                const SizedBox(width: 8),
+                _buildDateBox('Năm', yearStr, flex: 15),
+              ],
+            ),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildDateDropdown(String label, String value, {int flex = 10}) {
+  Widget _buildDateBox(String label, String value, {int flex = 10}) {
     return Expanded(
       flex: flex,
       child: Column(
@@ -359,7 +516,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 style: GoogleFonts.lexend(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.primary)),
+                    color: _selectedDate == null
+                        ? Colors.grey
+                        : AppColors.primary)),
           ),
         ],
       ),
