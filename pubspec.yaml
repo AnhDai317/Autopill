@@ -10,6 +10,8 @@ dependencies:
   flutter:
     sdk: flutter
   cupertino_icons: ^1.0.8
+  shared_preferences: ^2.2.2  # Dùng để lưu trạng thái đã đăng nhập
+  provider: ^6.1.1            # Chỉ giữ lại 1 dòng provider ở đây
 
   # UI & Styling
   google_fonts: ^6.1.0
@@ -18,7 +20,6 @@ dependencies:
   fl_chart: ^0.66.0
 
   # State Management & Di
-  provider: ^6.1.1
   get_it: ^7.6.4
 
   # Local Storage & Core
