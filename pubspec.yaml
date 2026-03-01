@@ -12,7 +12,8 @@ dependencies:
   cupertino_icons: ^1.0.8
   shared_preferences: ^2.2.2  # Dùng để lưu trạng thái đã đăng nhập
   provider: ^6.1.1            # Chỉ giữ lại 1 dòng provider ở đây
-
+  crypto: ^3.0.3
+  mailer: ^6.1.0
   # UI & Styling
   google_fonts: ^6.1.0
   font_awesome_flutter: ^10.6.0

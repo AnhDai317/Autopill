@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:percent_indicator/percent_indicator.dart';
 
-// --- Giữ nguyên class AppColors và AutoPillButton như cũ ---
 class AppColors {
   static const Color primary = Color(0xFF137FEC);
   static const Color backgroundLight = Color(0xFFF6F7F8);
@@ -56,30 +55,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
-      // 1. Thêm Icon thông báo vào đây
       appBar: AppBar(
         title: Text("Lịch Uống Thuốc",
             style: GoogleFonts.lexend(fontWeight: FontWeight.bold)),
         centerTitle: true,
         backgroundColor: Colors.white,
         elevation: 0,
-        automaticallyImplyLeading: false, // Tắt nút back nếu không cần
+        automaticallyImplyLeading: false,
         actions: [
           IconButton(
             icon: const Icon(Icons.notifications_none_rounded,
                 color: Colors.black, size: 28),
-            onPressed: () {
-              // Xử lý mở màn hình thông báo
-            },
+            onPressed: () {},
           ),
           const SizedBox(width: 8),
         ],
       ),
-      // 2. Chỉ giữ lại nội dung chính, BỎ Footer và FAB
       body: SingleChildScrollView(
-        padding: const EdgeInsets.only(
-            bottom:
-                100), // Padding đáy để không bị Footer của MainScreen che mất
+        padding: const EdgeInsets.only(bottom: 100),
         child: Column(
           children: [
             _buildGoalCard(),

@@ -1,79 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart'; // Lưu trạng thái đăng nhập
 
-import '../../viewmodels/login/login_viewmodel.dart';
-import '../../main_screen.dart';
-// IMPORT THÊM MÀN HÌNH ĐĂNG KÝ VÀO ĐÂY
+import '../../implementations/repositories/auth_repository.dart';
+import '../../viewmodels/auth/register_viewmodel.dart';
 import 'register_screen.dart';
+import 'forgot_password_screen.dart';
+import '../../main_screen.dart'; // Trỏ về MainScreen để lấy Footer
 
-// --- Hệ thống màu sắc trung tâm (AppColors) ---
 class AppColors {
-  static const Color primary = Color(0xFF137FEC);
+  static const Color primary = Color(0xFF0F66BD);
   static const Color backgroundLight = Color(0xFFF6F7F8);
-  static const Color textGray = Color(0xFF617589);
+  static const Color textGray = Color(0xFF4E5E71);
+  static const Color dark = Color(0xFF111418);
   static const Color border = Color(0xFFDBE0E6);
 }
 
-// --- Custom Button ---
-class AutoPillButton extends StatelessWidget {
-  final String text;
-  final VoidCallback onPressed;
-  final bool isOutlined;
-  final bool isLoading;
-
-  const AutoPillButton({
-    super.key,
-    required this.text,
-    required this.onPressed,
-    this.isOutlined = false,
-    this.isLoading = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: isOutlined ? Colors.transparent : AppColors.primary,
-      borderRadius: BorderRadius.circular(16),
-      elevation: isOutlined ? 0 : 4,
-      shadowColor: AppColors.primary.withOpacity(0.3),
-      child: InkWell(
-        onTap: isLoading ? null : onPressed,
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          width: double.infinity,
-          height: isOutlined ? 56 : 64,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            border: isOutlined
-                ? Border.all(color: AppColors.primary, width: 2)
-                : null,
-          ),
-          alignment: Alignment.center,
-          child: isLoading
-              ? const SizedBox(
-                  height: 24,
-                  width: 24,
-                  child: CircularProgressIndicator(
-                    color: Colors.white,
-                    strokeWidth: 3,
-                  ),
-                )
-              : Text(
-                  text,
-                  style: GoogleFonts.lexend(
-                    fontSize: isOutlined ? 18 : 20,
-                    fontWeight: FontWeight.bold,
-                    color: isOutlined ? AppColors.primary : Colors.white,
-                  ),
-                ),
-        ),
-      ),
-    );
-  }
-}
-
-// --- Màn hình Đăng Nhập hoàn thiện ---
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -82,229 +25,301 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  bool _isPasswordVisible = false;
-  final TextEditingController _identityController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
+  bool _isObscure = true;
+  bool _isLoading = false;
+
+  String? _emailError;
+  String? _passwordError;
+
+  // Validate Email
+  String? _validateEmailLocal(String email) {
+    if (email.isEmpty) return "Email không được để trống";
+    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+    if (!emailRegex.hasMatch(email)) return "Email không hợp lệ";
+    return null;
+  }
+
+  // Validate Mật khẩu (Chỉ kiểm tra rỗng ở màn hình Login)
+  String? _validatePasswordLocal(String password) {
+    if (password.isEmpty) return "Mật khẩu không được để trống";
+    return null;
+  }
+
   void _handleLogin() async {
-    final email = _identityController.text.trim();
+    final email = _emailController.text.trim();
     final password = _passwordController.text;
 
-    if (email.isEmpty || password.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vui lòng nhập Email và Mật khẩu')),
-      );
-      return;
-    }
+    setState(() {
+      _emailError = _validateEmailLocal(email);
+      _passwordError = _validatePasswordLocal(password);
+    });
 
-    final viewModel = context.read<LoginViewModel>();
-    final success = await viewModel.login(email, password);
+    if (_emailError != null || _passwordError != null) return;
+
+    setState(() => _isLoading = true);
+
+    final repo = AuthRepository();
+    final user = await repo.login(email, password);
 
     if (!mounted) return;
+    setState(() => _isLoading = false);
 
-    if (success) {
+    if (user != null) {
+      // 1. Lưu trạng thái đăng nhập vào máy để không bị bắt đăng nhập lại
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('isLoggedIn', true);
+      await prefs.setString('userName', user.fullName ?? 'Người dùng');
+      await prefs.setString('userEmail', email);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Chào mừng ${user.fullName} trở lại!")),
+      );
+
+      // 2. Điều hướng vào MainScreen để giữ lại thanh Footer dưới cùng
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(builder: (context) => const MainScreen()),
         (route) => false,
       );
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(viewModel.errorMessage ?? 'Đăng nhập thất bại'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      // Báo lỗi CẢ 2 Ô khi sai thông tin
+      setState(() {
+        _emailError = "Email hoặc mật khẩu không chính xác";
+        _passwordError = "Email hoặc mật khẩu không chính xác";
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final isLoading = context.watch<LoginViewModel>().isLoading;
-
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        // FIX 2: XÓA NÚT BACK VÀ CHẶN FLUTTER TỰ SINH NÚT BACK
-        automaticallyImplyLeading: false,
-        title: Text(
-          'Đăng Nhập',
-          style: GoogleFonts.lexend(
-              color: Colors.black, fontWeight: FontWeight.bold),
-        ),
-        centerTitle: true,
-      ),
-      body: SingleChildScrollView(
-        child: Center(
-          child: Container(
-            constraints: const BoxConstraints(maxWidth: 480),
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                const SizedBox(height: 32),
-
-                // Logo Section
-                Container(
-                  width: 96,
-                  height: 96,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 60),
+              Center(
+                child: Container(
+                  height: 100,
+                  width: 100,
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.1),
-                    shape: BoxShape.circle,
+                    color: AppColors.primary,
+                    borderRadius: BorderRadius.circular(24),
                   ),
-                  child: const Icon(Icons.medical_services,
-                      size: 60, color: AppColors.primary),
+                  child: const Icon(Icons.medication_liquid,
+                      size: 60, color: Colors.white),
                 ),
-                const SizedBox(height: 16),
-                Text(
+              ),
+              const SizedBox(height: 32),
+              Center(
+                child: Text(
                   'AutoPill',
                   style: GoogleFonts.lexend(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.primary,
-                  ),
+                      fontSize: 32,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.primary),
                 ),
-                const SizedBox(height: 12),
-                Text(
-                  'Chào mừng bác trở lại. Hãy đăng nhập để quản lý lịch uống thuốc.',
-                  textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              Center(
+                child: Text(
+                  'Quản lý sức khỏe mỗi ngày',
                   style: GoogleFonts.lexend(
-                      fontSize: 18, color: AppColors.textGray),
+                      fontSize: 16, color: AppColors.textGray),
                 ),
-                const SizedBox(height: 32),
-
-                // Input Fields
-                _buildInputField(
-                  label: 'Email',
-                  placeholder: 'Nhập Email của bạn',
-                  controller: _identityController,
+              ),
+              const SizedBox(height: 48),
+              _buildLabel('Email'),
+              _buildTextField(
+                  controller: _emailController,
+                  hint: 'Nhập email của bạn',
                   icon: Icons.email_outlined,
-                ),
-                const SizedBox(height: 20),
-                _buildPasswordField(),
-
-                // Forgot Password
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: TextButton(
-                    onPressed: () {},
-                    child: Text(
-                      'Quên mật khẩu?',
-                      style: GoogleFonts.lexend(
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.w600),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 24),
-
-                // Login Button
-                AutoPillButton(
-                  text: 'ĐĂNG NHẬP NGAY',
-                  isLoading: isLoading,
-                  onPressed: _handleLogin,
-                ),
-
-                const SizedBox(height: 40),
-
-                // Register Option
-                Text(
-                  'Bạn chưa có tài khoản?',
-                  style: GoogleFonts.lexend(color: AppColors.textGray),
-                ),
-                const SizedBox(height: 12),
-
-                // FIX 1: NÚT ĐĂNG KÝ ĐÃ ĐƯỢC KÍCH HOẠT CHUYỂN TRANG
-                AutoPillButton(
-                  text: 'Đăng ký tài khoản mới',
-                  isOutlined: true,
+                  errorText: _emailError,
+                  keyboardType: TextInputType.emailAddress,
+                  onChanged: (_) {
+                    if (_emailError != null) setState(() => _emailError = null);
+                  }),
+              const SizedBox(height: 20),
+              _buildLabel('Mật khẩu'),
+              _buildPasswordField(),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
                   onPressed: () {
-                    // Mở khóa lệnh chuyển sang màn hình RegisterScreen
                     Navigator.push(
                         context,
                         MaterialPageRoute(
-                            builder: (_) => const RegisterScreen()));
+                            builder: (context) =>
+                                const ForgotPasswordScreen()));
                   },
+                  child: Text(
+                    'Quên mật khẩu?',
+                    style: GoogleFonts.lexend(
+                        color: AppColors.primary, fontWeight: FontWeight.w600),
+                  ),
                 ),
-                const SizedBox(height: 32),
-              ],
-            ),
+              ),
+              const SizedBox(height: 24),
+              _buildLoginButton(),
+              const SizedBox(height: 32),
+              _buildRegisterLink(),
+            ],
           ),
         ),
       ),
     );
   }
 
-  Widget _buildInputField({
-    required String label,
-    required String placeholder,
+  Widget _buildLabel(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Text(
+        text,
+        style: GoogleFonts.lexend(
+            fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.dark),
+      ),
+    );
+  }
+
+  Widget _buildTextField({
     required TextEditingController controller,
+    required String hint,
     required IconData icon,
+    String? errorText,
+    TextInputType? keyboardType,
+    Function(String)? onChanged,
   }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label,
-            style:
-                GoogleFonts.lexend(fontSize: 18, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 8),
-        TextField(
-          controller: controller,
-          style: GoogleFonts.lexend(fontSize: 18),
-          decoration: InputDecoration(
-            hintText: placeholder,
-            suffixIcon: Icon(icon, color: Colors.grey),
-            filled: true,
-            fillColor: Colors.white,
-            contentPadding: const EdgeInsets.all(16),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.border),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.primary, width: 2),
-            ),
-          ),
+    return TextField(
+      controller: controller,
+      keyboardType: keyboardType,
+      onChanged: onChanged,
+      decoration: InputDecoration(
+        hintText: hint,
+        errorText: errorText,
+        prefixIcon:
+            Icon(icon, color: errorText != null ? Colors.red : Colors.grey),
+        filled: true,
+        fillColor: Colors.white,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppColors.border),
         ),
-      ],
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppColors.border),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppColors.primary, width: 2),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Colors.red, width: 1),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Colors.red, width: 2),
+        ),
+      ),
     );
   }
 
   Widget _buildPasswordField() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return TextField(
+      controller: _passwordController,
+      obscureText: _isObscure,
+      onChanged: (_) {
+        if (_passwordError != null) setState(() => _passwordError = null);
+      },
+      decoration: InputDecoration(
+        hintText: 'Nhập mật khẩu',
+        errorText: _passwordError,
+        prefixIcon: Icon(Icons.lock_outline,
+            color: _passwordError != null ? Colors.red : Colors.grey),
+        suffixIcon: IconButton(
+          icon: Icon(_isObscure ? Icons.visibility_off : Icons.visibility,
+              color: _passwordError != null ? Colors.red : Colors.grey),
+          onPressed: () => setState(() => _isObscure = !_isObscure),
+        ),
+        filled: true,
+        fillColor: Colors.white,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppColors.border),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppColors.border),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppColors.primary, width: 2),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Colors.red, width: 1),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Colors.red, width: 2),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLoginButton() {
+    return Material(
+      color: AppColors.primary,
+      borderRadius: BorderRadius.circular(16),
+      elevation: 4,
+      child: InkWell(
+        onTap: _isLoading ? null : _handleLogin,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          width: double.infinity,
+          height: 64,
+          alignment: Alignment.center,
+          child: _isLoading
+              ? const CircularProgressIndicator(color: Colors.white)
+              : Text('ĐĂNG NHẬP',
+                  style: GoogleFonts.lexend(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white)),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRegisterLink() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Text('Mật khẩu',
-            style:
-                GoogleFonts.lexend(fontSize: 18, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 8),
-        TextField(
-          controller: _passwordController,
-          obscureText: !_isPasswordVisible,
-          style: GoogleFonts.lexend(fontSize: 18),
-          decoration: InputDecoration(
-            hintText: 'Nhập mật khẩu',
-            filled: true,
-            fillColor: Colors.white,
-            contentPadding: const EdgeInsets.all(16),
-            suffixIcon: IconButton(
-              icon: Icon(
-                  _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
-                  color: Colors.grey),
-              onPressed: () =>
-                  setState(() => _isPasswordVisible = !_isPasswordVisible),
-            ),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.border),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.primary, width: 2),
-            ),
+        Text('Chưa có tài khoản? ',
+            style: GoogleFonts.lexend(color: AppColors.textGray)),
+        GestureDetector(
+          onTap: () {
+            Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ChangeNotifierProvider(
+                    create: (_) => RegisterViewModel(),
+                    child: const RegisterScreen(),
+                  ),
+                ));
+          },
+          child: Text(
+            'Đăng ký ngay',
+            style: GoogleFonts.lexend(
+                color: AppColors.primary,
+                fontWeight: FontWeight.bold,
+                decoration: TextDecoration.underline),
           ),
         ),
       ],
