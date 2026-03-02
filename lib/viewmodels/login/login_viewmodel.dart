@@ -1,52 +1,57 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-
-// Đảm bảo đường dẫn này trỏ đúng tới interface IAuthRepository của bác
-import '../../interfaces/repositories/iauth_repository.dart';
+import 'package:autopill/data/interfaces/repositories/iauth_repository.dart';
+import 'package:autopill/domain/entities/user.dart';
 
 class LoginViewModel extends ChangeNotifier {
-  final IAuthRepository _authRepository;
-
-  LoginViewModel(this._authRepository);
+  final IauthRepository _repository;
+  LoginViewModel(this._repository);
 
   bool _isLoading = false;
-  bool get isLoading => _isLoading;
-
   String? _errorMessage;
-  String? get errorMessage => _errorMessage;
+  User? _currentUser;
 
-  // Hàm gọi từ nút Đăng Nhập ở UI
+  bool get isLoading => _isLoading;
+  String? get errorMessage => _errorMessage;
+  User? get currentUser => _currentUser;
+
   Future<bool> login(String email, String password) async {
     _isLoading = true;
     _errorMessage = null;
-    notifyListeners(); // Báo cho UI hiện vòng xoay loading
+    notifyListeners();
 
     try {
-      final user = await _authRepository.login(email, password);
-
-      if (user != null) {
-        // Đăng nhập thành công -> Lưu cờ đánh dấu đã đăng nhập vào SharedPreferences
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setBool('isLoggedIn', true);
-        await prefs.setString('userEmail', user.email);
-
-        // Fix: Đề phòng user.id bị null
-        await prefs.setInt('userId', user.id ?? 0);
-
-        _isLoading = false;
-        notifyListeners();
-        return true;
-      } else {
-        _errorMessage = "Email hoặc mật khẩu không chính xác!";
+      _currentUser = await _repository.login(email, password);
+      if (_currentUser == null) {
+        _errorMessage = 'Email hoac mat khau khong chinh xac!';
         _isLoading = false;
         notifyListeners();
         return false;
       }
+      _isLoading = false;
+      notifyListeners();
+      return true;
     } catch (e) {
-      _errorMessage = "Lỗi hệ thống: $e";
+      _errorMessage = 'Loi he thong: $e';
       _isLoading = false;
       notifyListeners();
       return false;
     }
+  }
+
+  // Kiem tra phien dang nhap khi mo app
+  Future<void> checkSession() async {
+    _currentUser = await _repository.getCurrentSession();
+    notifyListeners();
+  }
+
+  Future<void> logout() async {
+    await _repository.logout();
+    _currentUser = null;
+    notifyListeners();
+  }
+
+  void clearError() {
+    _errorMessage = null;
+    notifyListeners();
   }
 }

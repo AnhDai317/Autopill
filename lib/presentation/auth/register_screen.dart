@@ -1,11 +1,10 @@
+import 'package:autopill/viewmodels/auth/register_viewmodel.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../../data/dtos/auth/register_request_dto.dart';
-import '../../implementations/repositories/auth_repository.dart';
-import '../../viewmodels/auth/register_viewmodel.dart';
 
 class AppColors {
   static const Color primary = Color(0xFF0F66BD);
@@ -26,7 +25,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _isObscure = true;
   bool _isConfirmObscure = true;
   bool _agreeToTerms = false;
-  bool _isLoading = false;
 
   DateTime? _selectedDate;
 
@@ -62,7 +60,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   void _showCupertinoDatePicker() {
-    final viewModel = context.read<RegisterViewModel>();
+    final vm = context.read<RegisterViewModel>();
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.white,
@@ -95,7 +93,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     onDateTimeChanged: (DateTime newDate) {
                       setState(() {
                         _selectedDate = newDate;
-                        _dobError = viewModel.validateDob(newDate);
+                        _dobError = vm.validateDob(newDate);
                       });
                     },
                   ),
@@ -115,15 +113,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
           : null;
       _emailError = _validateEmailLocal(_emailController.text.trim());
       _passError = _validatePasswordLocal(_passwordController.text);
-
-      if (_passwordController.text != _confirmPasswordController.text) {
-        _confirmPassError = "Mật khẩu không khớp";
-      } else if (_confirmPasswordController.text.isEmpty) {
-        _confirmPassError = "Vui lòng xác nhận lại mật khẩu";
-      } else {
-        _confirmPassError = null;
-      }
-
+      _confirmPassError = _confirmPasswordController.text.isEmpty
+          ? "Vui lòng xác nhận lại mật khẩu"
+          : (_passwordController.text != _confirmPasswordController.text
+              ? "Mật khẩu không khớp"
+              : null);
       if (_selectedDate == null) _dobError = "Vui lòng chọn ngày sinh";
     });
 
@@ -139,8 +133,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       return;
     }
 
-    setState(() => _isLoading = true);
-    final repo = AuthRepository();
+    final vm = context.read<RegisterViewModel>();
     final request = RegisterRequestDto(
       fullName: _nameController.text.trim(),
       email: _emailController.text.trim(),
@@ -148,22 +141,23 @@ class _RegisterScreenState extends State<RegisterScreen> {
       dob: _selectedDate?.toIso8601String(),
     );
 
-    bool success = await repo.register(request);
+    await vm.register(request);
 
     if (!mounted) return;
-    setState(() => _isLoading = false);
 
-    if (success) {
+    if (vm.success) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
           content: Text("Đăng ký thành công!"), backgroundColor: Colors.green));
       Navigator.pop(context);
     } else {
-      setState(() => _emailError = "Email này đã được sử dụng");
+      setState(() => _emailError = vm.errorMessage);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final vm = context.watch<RegisterViewModel>();
+
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
       appBar: AppBar(
@@ -254,7 +248,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             const SizedBox(height: 24),
             _buildTermsCheckbox(),
             const SizedBox(height: 32),
-            _buildRegisterButton(),
+            _buildRegisterButton(vm.isLoading),
             const SizedBox(height: 24),
             _buildLoginLink(),
           ],
@@ -263,13 +257,21 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  Widget _buildTextField(
-      {required TextEditingController controller,
-      required String hint,
-      IconData? icon,
-      String? errorText,
-      TextInputType? keyboardType,
-      Function(String)? onChanged}) {
+  Widget _buildLabel(String text) => Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: Text(text,
+            style:
+                GoogleFonts.lexend(fontSize: 16, fontWeight: FontWeight.bold)),
+      );
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String hint,
+    IconData? icon,
+    String? errorText,
+    TextInputType? keyboardType,
+    Function(String)? onChanged,
+  }) {
     return TextField(
       controller: controller,
       keyboardType: keyboardType,
@@ -297,13 +299,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  Widget _buildPasswordField(
-      {required TextEditingController controller,
-      required String hint,
-      required bool isObscure,
-      required VoidCallback onToggle,
-      String? errorText,
-      Function(String)? onChanged}) {
+  Widget _buildPasswordField({
+    required TextEditingController controller,
+    required String hint,
+    required bool isObscure,
+    required VoidCallback onToggle,
+    String? errorText,
+    Function(String)? onChanged,
+  }) {
     return TextField(
       controller: controller,
       obscureText: isObscure,
@@ -335,17 +338,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  Widget _buildRegisterButton() {
+  Widget _buildRegisterButton(bool isLoading) {
     return Material(
       color: AppColors.primary,
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
-        onTap: _isLoading ? null : _handleRegister,
+        onTap: isLoading ? null : _handleRegister,
         borderRadius: BorderRadius.circular(16),
         child: Container(
           height: 64,
           alignment: Alignment.center,
-          child: _isLoading
+          child: isLoading
               ? const CircularProgressIndicator(color: Colors.white)
               : Text('Tạo tài khoản',
                   style: GoogleFonts.lexend(
@@ -356,12 +359,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
       ),
     );
   }
-
-  Widget _buildLabel(String text) => Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Text(text,
-          style:
-              GoogleFonts.lexend(fontSize: 16, fontWeight: FontWeight.bold)));
 
   Widget _buildBirthDateSection() {
     return GestureDetector(
@@ -397,11 +394,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
         Checkbox(
             value: _agreeToTerms,
             onChanged: (v) => setState(() => _agreeToTerms = v!)),
-        const Expanded(child: Text("Tôi đồng ý với điều khoản sử dụng"))
+        const Expanded(child: Text("Tôi đồng ý với điều khoản sử dụng")),
       ]);
 
   Widget _buildLoginLink() => Center(
-      child: TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text("Đã có tài khoản? Đăng nhập ngay")));
+        child: TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Đã có tài khoản? Đăng nhập ngay")),
+      );
 }

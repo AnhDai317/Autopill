@@ -60,7 +60,43 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _handleLogout() {
-    // ... (Giữ nguyên logic showDialog và Logout như cũ của anh)
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text("Xác nhận đăng xuất",
+              style: GoogleFonts.lexend(fontWeight: FontWeight.bold)),
+          content: Text("Bạn có chắc chắn muốn thoát khỏi tài khoản này?",
+              style: GoogleFonts.lexend()),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context), // Đóng dialog
+              child: Text("Hủy", style: GoogleFonts.lexend(color: Colors.grey)),
+            ),
+            TextButton(
+              onPressed: () async {
+                // 1. Xóa dữ liệu đăng nhập trong SharedPreferences
+                final prefs = await SharedPreferences.getInstance();
+                await prefs.clear();
+
+                // 2. Quay về màn hình Login và xóa sạch các màn hình trước đó
+                if (mounted) {
+                  Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => const LoginScreen()),
+                    (route) => false,
+                  );
+                }
+              },
+              child: Text("Đăng xuất",
+                  style: GoogleFonts.lexend(
+                      color: Colors.red, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
