@@ -3,10 +3,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../auth/login_screen.dart';
-
-// THÊM 2 DÒNG IMPORT NÀY VÀO (trỏ đúng đường dẫn thư mục anh vừa tạo)
 import 'profile_screen.dart';
 import 'notification_settings_screen.dart';
+import 'change_password_screen.dart'; // IMPORT MÀN HÌNH ĐỔI MẬT KHẨU
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -37,25 +36,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
     });
   }
 
-  // CẬP NHẬT MỚI: Hàm chuyển sang màn hình Profile
   void _goToProfileScreen() async {
-    // Chờ màn hình Profile trả kết quả về (khi pop)
     final result = await Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const ProfileScreen()),
     );
-    // Nếu có update dữ liệu thì load lại Profile
     if (result == true) {
       _loadUserProfile();
     }
   }
 
-  // CẬP NHẬT MỚI: Hàm chuyển sang màn hình Thông báo
   void _goToNotificationSettings() {
     Navigator.push(
       context,
       MaterialPageRoute(
           builder: (context) => const NotificationSettingsScreen()),
+    );
+  }
+
+  void _goToChangePassword() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const ChangePasswordScreen()),
     );
   }
 
@@ -70,16 +72,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
               style: GoogleFonts.lexend()),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context), // Đóng dialog
+              onPressed: () => Navigator.pop(context),
               child: Text("Hủy", style: GoogleFonts.lexend(color: Colors.grey)),
             ),
             TextButton(
               onPressed: () async {
-                // 1. Xóa dữ liệu đăng nhập trong SharedPreferences
                 final prefs = await SharedPreferences.getInstance();
                 await prefs.clear();
 
-                // 2. Quay về màn hình Login và xóa sạch các màn hình trước đó
                 if (mounted) {
                   Navigator.pushAndRemoveUntil(
                     context,
@@ -106,7 +106,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // Profile Header
             Container(
               width: double.infinity,
               padding: const EdgeInsets.only(top: 60, bottom: 40),
@@ -134,10 +133,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ],
               ),
             ),
-
             const SizedBox(height: 16),
-
-            // Danh sách Menu
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Container(
@@ -147,9 +143,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 child: Column(
                   children: [
-                    // Gắn hành động chuyển trang thật vào đây
                     _buildMenuItem(Icons.account_circle, "Thông tin cá nhân",
                         primaryColor, textColor, _goToProfileScreen),
+                    const Divider(height: 1, indent: 64, endIndent: 20),
+
+                    // Mục Đổi mật khẩu
+                    _buildMenuItem(Icons.lock_outline, "Đổi mật khẩu",
+                        primaryColor, textColor, _goToChangePassword),
                     const Divider(height: 1, indent: 64, endIndent: 20),
 
                     _buildMenuItem(

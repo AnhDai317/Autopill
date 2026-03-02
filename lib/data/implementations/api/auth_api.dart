@@ -27,14 +27,27 @@ class AuthApi implements IauthApi {
 
     final userDto = UserDto.fromMap(maps.first);
 
-    // Luu session vao SharedPreferences
+    // Luu session - them userDob
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('isLoggedIn', true);
     await prefs.setString('userEmail', req.email);
     await prefs.setString('userName', userDto.fullName);
     await prefs.setInt('userId', userDto.id ?? 0);
+    await prefs.setString(
+        'userDob', _formatDob(userDto.dob)); // ← thêm dòng này
 
     return LoginResponseDto(token: 'local_session', user: userDto);
+  }
+
+  // Chuyển ISO string (2000-01-15T00:00:00.000) sang dd/MM/yyyy
+  String _formatDob(String? isoDate) {
+    if (isoDate == null || isoDate.isEmpty) return '';
+    try {
+      final dt = DateTime.parse(isoDate);
+      return '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year}';
+    } catch (_) {
+      return isoDate;
+    }
   }
 
   @override
@@ -69,7 +82,6 @@ class AuthApi implements IauthApi {
     );
     if (users.isEmpty) return false;
 
-    // Tao mat khau moi ngau nhien
     String newRawPassword =
         (100000 + (DateTime.now().millisecond % 900000)).toString();
     String hashedNewPass = SecurityUtil.hashPassword(newRawPassword);
@@ -81,7 +93,6 @@ class AuthApi implements IauthApi {
       whereArgs: [email],
     );
 
-    // Gui mail (giu nguyen logic cu)
     String senderEmail = 'emkobtchoiok@gmail.com';
     String appPassword = 'qytn pnhq dwrv gzxy';
     final smtpServer = gmail(senderEmail, appPassword);
